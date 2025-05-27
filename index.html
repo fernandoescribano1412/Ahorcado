@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Juego del Ahorcado</title>
+<style>
+  body {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background: #f0f8ff;
+    text-align: center;
+    padding: 30px;
+    color: #333;
+  }
+  h1 {
+    margin-bottom: 10px;
+  }
+  #palabra {
+    font-size: 2rem;
+    letter-spacing: 10px;
+    margin: 20px 0;
+  }
+  #letras-usadas {
+    margin: 15px 0;
+  }
+  #mensaje {
+    font-weight: bold;
+    margin: 20px 0;
+  }
+  input[type="text"] {
+    font-size: 1.5rem;
+    width: 50px;
+    text-align: center;
+  }
+  button {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    font-size: 1rem;
+    padding: 8px 15px;
+    margin-left: 10px;
+    cursor: pointer;
+  }
+  select {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    font-size: 1rem;
+    margin-bottom: 20px;
+  }
+  #intentos {
+    font-size: 1.2rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>🎮 Juego del Ahorcado</h1>
+
+<label for="modo">Modo de juego:</label>
+<select id="modo">
+  <option value="1">1 Jugador (palabra aleatoria)</option>
+  <option value="2">2 Jugadores (uno escribe palabra)</option>
+</select>
+<br/>
+
+<div id="entrada-palabra-container" style="display:none; margin: 10px 0;">
+  <input type="text" id="entrada-palabra" placeholder="Palabra secreta" />
+  <button id="btn-confirmar-palabra">Confirmar</button>
+</div>
+
+<label for="dificultad">Dificultad:</label>
+<select id="dificultad">
+  <option value="10">Fácil (10 intentos)</option>
+  <option value="7">Medio (7 intentos)</option>
+  <option value="5">Difícil (5 intentos)</option>
+</select>
+
+<br/><br/>
+
+<button id="btn-iniciar">Iniciar Juego</button>
+
+<hr />
+
+<div id="juego" style="display:none;">
+  <div id="palabra"></div>
+  <div id="letras-usadas"></div>
+  <div id="intentos"></div>
+
+  <input type="text" id="letra" maxlength="1" autocomplete="off" />
+  <button id="btn-adivinar">Adivinar</button>
+
+  <div id="mensaje"></div>
+</div>
+
+<script>
+  const palabras = ["python", "programa", "computadora", "pantalla", "teclado", "desarrollador"];
+  let palabraSecreta = "";
+  let estado = [];
+  let letrasUsadas = [];
+  let intentosRestantes = 0;
+
+  const modoSelect = document.getElementById("modo");
+  const entradaPalabraCont = document.getElementById("entrada-palabra-container");
+  const entradaPalabra = document.getElementById("entrada-palabra");
+  const btnConfirmarPalabra = document.getElementById("btn-confirmar-palabra");
+
+  modoSelect.addEventListener("change", () => {
+    if (modoSelect.value === "2") {
+      entradaPalabraCont.style.display = "block";
+    } else {
+      entradaPalabraCont.style.display = "none";
+    }
+  });
+
+  document.getElementById("btn-iniciar").addEventListener("click", () => {
+    if (modoSelect.value === "2") {
+      let palabra = entradaPalabra.value.trim().toLowerCase();
+      if (!palabra.match(/^[a-záéíóúüñ]+$/i)) {
+        alert("Por favor, ingresa una palabra válida (solo letras).");
+        return;
+      }
+      palabraSecreta = palabra;
+    } else {
+      palabraSecreta = palabras[Math.floor(Math.random() * palabras.length)];
+    }
+    intentosRestantes = parseInt(document.getElementById("dificultad").value);
+    iniciarJuego();
+  });
+
+  function iniciarJuego() {
+    estado = Array(palabraSecreta.length).fill("_");
+    letrasUsadas = [];
+    document.getElementById("mensaje").textContent = "";
+    document.getElementById("juego").style.display = "block";
+    actualizarPantalla();
+  }
+
+  document.getElementById("btn-adivinar").addEventListener("click", adivinarLetra);
+  document.getElementById("letra").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      adivinarLetra();
+    }
+  });
+
+  function actualizarPantalla() {
+    document.getElementById("palabra").textContent = estado.join(" ");
+    document.getElementById("letras-usadas").textContent = "Letras usadas: " + letrasUsadas.join(", ");
+    document.getElementById("intentos").textContent = "Intentos restantes: " + intentosRestantes;
+    document.getElementById("letra").value = "";
+    document.getElementById("letra").focus();
+  }
+
+  function adivinarLetra() {
+    let letra = document.getElementById("letra").value.toLowerCase();
+    if (!letra.match(/^[a-záéíóúüñ]$/i)) {
+      alert("Ingresa una sola letra válida.");
+      return;
+    }
+    if (letrasUsadas.includes(letra)) {
+      alert("Ya usaste esa letra.");
+      return;
+    }
+    letrasUsadas.push(letra);
+
+    if (palabraSecreta.includes(letra)) {
+      for (let i = 0; i < palabraSecreta.length; i++) {
+        if (palabraSecreta[i] === letra) {
+          estado[i] = letra;
+        }
+      }
+    } else {
+      intentosRestantes--;
+    }
+
+    actualizarPantalla();
+    chequearFin();
+  }
+
+  function chequearFin() {
+    if (!estado.includes("_")) {
+      document.getElementById("mensaje").textContent = "🎉 ¡Ganaste! La palabra era: " + palabraSecreta;
+      terminarJuego();
+    } else if (intentosRestantes === 0) {
+      document.getElementById("mensaje").textContent = "💀 ¡Perdiste! La palabra era: " + palabraSecreta;
+      terminarJuego();
+    }
+  }
+
+  function terminarJuego() {
+    document.getElementById("btn-adivinar").disabled = true;
+    document.getElementById("letra").disabled = true;
+
+    setTimeout(() => {
+      if (confirm("¿Quieres jugar otra vez?")) {
+        reiniciarJuego();
+      }
+    }, 100);
+  }
+
+  function reiniciarJuego() {
+    document.getElementById("btn-adivinar").disabled = false;
+    document.getElementById("letra").disabled = false;
+    document.getElementById("juego").style.display = "none";
+    entradaPalabra.value = "";
+    document.getElementById("mensaje").textContent = "";
+  }
+</script>
+
+</body>
+</html>
+
